@@ -1,33 +1,33 @@
-#=
-Q-Learning algorithm for solving the Frozen Lake problem.
+"""
+  Q-Learning algorithm for solving the Frozen Lake problem.
 
-Q-Learning Algorithm:
-  1. Initialize Q-Table.
-  2. Choose an Action.
-  3. Perform Action.
-  4. Measure Reward.
-  5. Update Q-Table.
+  Algorithm:
+    1. Initialize Q-Table.
+    2. Choose an Action.
+    3. Perform Action.
+    4. Measure Reward.
+    5. Update Q-Table.
 
-Terms:
-  W - World
-  S - State
-  A - Agent
-  R - Reward
-  M - Action (Move)
-  Q - Q-Table (Memory)
-=#
+  Terms:
+    W - World
+    S - State
+    A - Agent
+    R - Reward
+    M - Action (Move)
+    Q - Q-Table (Memory)
+"""
 
 # *----------------------------------------------------------------------------* Imports
 
 import Random: rand
 
 include("lib/types.jl")
-include("lib/visual.jl")
+include("lib/video.jl")
 
 # *----------------------------------------------------------------------------* Constants
 
 "World definition."
-const W::Matrix{Tile} = [
+const W::World = [
   [None None None None]
   [None Hole None Hole]
   [None None None Hole]
@@ -36,9 +36,6 @@ const W::Matrix{Tile} = [
 
 "World dimensions."
 const (Nx::Int, Ny::Int) = size(W)
-
-"Minimum exploration rate."
-const ϵₘᵢₙ = 0.05
 
 # *----------------------------------------------------------------------------* Methods
 
@@ -68,6 +65,7 @@ choiceGreedy(A::Agent)::Move = Move(argmax(A.Q[A.X, A.Y, :]))
 
 "Weighted random action choice."
 # choiceWeight(A::Agent)::Move = Move(argmax(A.Q[A.X, A.Y, :]))
+
 
 """Choice with exploration rate `ϵ`."""
 choice(A::Agent, ϵ::Float64)::Move = (
@@ -100,8 +98,9 @@ end
 learn(A::Agent, M::Move, X₀::Int, Y₀::Int, R::Float64; α::Float64=0.7, γ::Float64=0.95) =
   A.Q[X₀, Y₀, M] += α * (R + γ * maximum(A.Q[A.X, A.Y, :]) - A.Q[X₀, Y₀, M])
 
+
 "Perform a step of action-choice, action-making, and learning."
-function step(A::Agent, ϵ::Float64)::Bool
+function step(A::Agent, ϵ::Float64=0.0)::Tuple{Bool,Int,Int}
   X₀, Y₀ = A.X, A.Y
 
   # S::State = state(A)
@@ -114,13 +113,18 @@ function step(A::Agent, ϵ::Float64)::Bool
 
   learn(A, M, X₀, Y₀, R)
 
-  return W[A.X, A.Y] in (Goal, Hole)
+  return W[A.X, A.Y] in (Goal, Hole), A.X, A.Y
 end
 
 # *----------------------------------------------------------------------------* Helper Methods
 
 "Exponential decay function."
-decay(λ::Float64, x::Int)::Float64 = (1.0 - ϵₘᵢₙ)exp(-λ * x) + ϵₘᵢₙ
+decay(
+  x::Int,
+  λ::Float64=1e-1;
+  max::Float64=1.0,
+  min::Float64=0.05,
+)::Float64 = (max - min)exp(-λ * x) + min
 
 
 printline() = println("-"^120)
@@ -130,41 +134,59 @@ printspace() = println("\n"^2)
 "Train the agent for `episodes` episodes."
 function train(A::Agent, episodes::Int)
   done::Bool = false
+  steps::Steps = []
+  x::Int = 1
+  y::Int = 1
 
   for e in 1:episodes
     println("Episode: $e")
     printline()
     spawn(A)
 
+    push!(steps, (1, 1))
+
     done = false
 
     while !done
-      done = step(A, decay(1e-1, e))
+      done, x, y = step(A, decay(e))
+      push!(steps, (x, y))
     end
 
     printline()
     printspace()
   end
+
+  return steps
 end
 
 
 "Test the agent in exploitation mode."
 function test(A::Agent)
+  steps::Steps = [(1, 1)]
+  done::Bool = false
+
   println("Testing")
   printline()
   spawn(A)
 
-  done = false
-
   while !done
-    done = step(A, 0.0)
+    done, x, y = step(A)
+    push!(steps, (x, y))
   end
+
+  return steps
 end
 
 # *----------------------------------------------------------------------------* Main
 
 A::Agent = Agent(Nx, Ny, 4)
 
-train(A, 1000)
+Hs = train(A, 1000)
 
-test(A)
+H = test(A)
+
+# *----------------------------------------------------------------------------* Video
+
+save(W, Hs; framerate=25, name="training")
+
+save(W, H; framerate=5, name="result")

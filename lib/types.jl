@@ -1,5 +1,6 @@
-"Agent's memory."
-const QTable = Array{Float64,3}
+"""
+  Structures and constants.
+"""
 
 # *----------------------------------------------------------------------------* Environment
 
@@ -21,6 +22,9 @@ Base.float(C::Tile)::Float64 = float(Int(C))
 #   E::Tile # right
 # end
 
+"Map of the world."
+const World = Matrix{Tile}
+
 # *----------------------------------------------------------------------------* Actions
 
 "Possible moves."
@@ -34,6 +38,12 @@ end
 Base.to_index(M::Move)::Int = Int(M)
 
 # *----------------------------------------------------------------------------* Agent
+
+"Agent's memory."
+const QTable = Array{Float64,3}
+
+"Agent's path."
+const Steps = Vector{Tuple{Int,Int}}
 
 "Acting agent."
 mutable struct Agent
