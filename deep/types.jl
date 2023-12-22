@@ -2,6 +2,8 @@
   Structures and constants.
 """
 
+import Flux: Chain
+
 # *----------------------------------------------------------------------------* Environment
 
 "Tiles of the world."
@@ -12,7 +14,7 @@
   Hole = -5
 end
 
-Base.float(C::Tile)::Float64 = float(Int(C))
+Base.float(C::Tile)::Float32 = float(Int(C))
 
 # "World perception from agent's point of view."
 # struct State
@@ -37,38 +39,32 @@ end
 
 Base.to_index(M::Move)::Int = Int(M)
 
-# *----------------------------------------------------------------------------* Agent
+"List of all possible actions."
+const Moves::Vector{Move} = [Up, Down, Left, Right]
 
-"Agent's memory."
-const QTable = Array{Float64,3}
+# *----------------------------------------------------------------------------* Agent
 
 "Agent's path."
 const Steps = Vector{Tuple{Int,Int}}
 
-"Acting agent."
-mutable struct Agent
-  Q::QTable
-  X::Int
-  Y::Int
-
-  Agent(
-    Q::QTable,
-    X::Int=1,
-    Y::Int=1,
-  ) = new(Q, X, Y)
-
-  Agent(
-    Nx::Int,
-    Ny::Int,
-    M::Int,
-    X::Int=1,
-    Y::Int=1,
-  ) = new(zeros(Nx, Ny, M), X, Y)
+"Agent's memory."
+struct Memory
+  S₁::Int       # old state
+  S₂::Int       # new state
+  M::Move       # action taken
+  R::Float32    # reward
 end
 
-"Action result."
-struct Result
+"Acting agent."
+mutable struct Agent
   X::Int
   Y::Int
-  R::Float64
+  Q::Chain
+
+  Agent(
+    Q::Chain,
+    X::Int=1,
+    Y::Int=1,
+  ) = new(X, Y, Q)
+
 end

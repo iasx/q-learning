@@ -1,5 +1,5 @@
 """
-  Q-Learning algorithm for solving the Frozen Lake problem.
+  Vanilla Q-Learning algorithm for solving the Frozen Lake problem.
 
   Algorithm:
     1. Initialize Q-Table.
@@ -13,16 +13,17 @@
     S - State
     A - Agent
     R - Reward
-    M - Action (Move)
-    Q - Q-Table (Memory)
+    M - Move (Action)
+    Q - Q-Table (Brain)
 """
 
 # *----------------------------------------------------------------------------* Imports
 
 import Random: rand
 
-include("lib/types.jl")
-include("lib/video.jl")
+include("types.jl")
+include("utils.jl")
+include("video.jl")
 
 # *----------------------------------------------------------------------------* Constants
 
@@ -39,13 +40,6 @@ const (Nx::Int, Ny::Int) = size(W)
 
 # *----------------------------------------------------------------------------* Methods
 
-# state(A::Agent)::State = State(
-#   A.Y == Ny ? Wall : W[A.X, A.Y+1],
-#   A.Y == 1  ? Wall : W[A.X, A.Y-1],
-#   A.X == 1  ? Wall : W[A.X-1, A.Y],
-#   A.X == Nx ? Wall : W[A.X+1, A.Y],
-# )
-
 "Teleport agent to the starting position."
 spawn(A::Agent) = (A.X, A.Y) = (1, 1)
 
@@ -58,14 +52,13 @@ reward(X::Int, Y::Int)::Float64 = float(W[X, Y])
 # *----------------------------------------------------------------------------* Policies
 
 "Random action choice."
-choiceRandom()::Move = rand((Up, Down, Left, Right))
+choiceRandom()::Move = rand(Moves)
 
 "Greedy action choice."
 choiceGreedy(A::Agent)::Move = Move(argmax(A.Q[A.X, A.Y, :]))
 
 "Weighted random action choice."
-# choiceWeight(A::Agent)::Move = Move(argmax(A.Q[A.X, A.Y, :]))
-
+# choiceWeight(A::Agent)::Move = sample(Moves, Weights(A.Q[A.X, A.Y, :])) # via StatsBase
 
 """Choice with exploration rate `ϵ`."""
 choice(A::Agent, ϵ::Float64)::Move = (
@@ -93,17 +86,13 @@ make(A::Agent, M::Move)::Float64 = begin
   return reward(A.X, A.Y)
 end
 
-
 "Update Q-Table with `α` learning rate and `γ` discount factor."
 learn(A::Agent, M::Move, X₀::Int, Y₀::Int, R::Float64; α::Float64=0.7, γ::Float64=0.95) =
   A.Q[X₀, Y₀, M] += α * (R + γ * maximum(A.Q[A.X, A.Y, :]) - A.Q[X₀, Y₀, M])
 
-
 "Perform a step of action-choice, action-making, and learning."
 function step(A::Agent, ϵ::Float64=0.0)::Tuple{Bool,Int,Int}
   X₀, Y₀ = A.X, A.Y
-
-  # S::State = state(A)
 
   M = choice(A, ϵ)
 
@@ -117,19 +106,6 @@ function step(A::Agent, ϵ::Float64=0.0)::Tuple{Bool,Int,Int}
 end
 
 # *----------------------------------------------------------------------------* Helper Methods
-
-"Exponential decay function."
-decay(
-  x::Int,
-  λ::Float64=1e-1;
-  max::Float64=1.0,
-  min::Float64=0.05,
-)::Float64 = (max - min)exp(-λ * x) + min
-
-
-printline() = println("-"^120)
-printspace() = println("\n"^2)
-
 
 "Train the agent for `episodes` episodes."
 function train(A::Agent, episodes::Int)
@@ -158,7 +134,6 @@ function train(A::Agent, episodes::Int)
 
   return steps
 end
-
 
 "Test the agent in exploitation mode."
 function test(A::Agent)
