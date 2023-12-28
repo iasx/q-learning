@@ -16,9 +16,9 @@ using Plots
 import Random: rand
 
 include("types.jl")
-include("utils.jl")
 include("model.jl")
-include("video.jl")
+include("../shared/utils.jl")
+include("../shared/video.jl")
 
 # *----------------------------------------------------------------------------* World Definition
 
@@ -170,7 +170,7 @@ loss = train!(A)
 
 # *----------------------------------------------------------------------------* Loss Visualization
 
-plot(loss, label="loss", xlabel="epoch", ylabel="MSE")
+plot(loss; label="loss", xlabel="epoch", ylabel="MSE")
 
 # *----------------------------------------------------------------------------* Testing
 

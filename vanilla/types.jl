@@ -12,7 +12,7 @@
   Hole = -5
 end
 
-Base.float(C::Tile)::Float64 = float(Int(C))
+Base.float(C::Tile)::Float32 = float(Int(C))
 
 # "World perception from agent's point of view."
 # struct State
@@ -43,7 +43,7 @@ const Moves::Vector{Move} = [Up, Down, Left, Right]
 # *----------------------------------------------------------------------------* Agent
 
 "Agent's memory."
-const QTable = Array{Float64,3}
+const QTable = Array{Float32,3}
 
 "Agent's path."
 const Steps = Vector{Tuple{Int,Int}}
@@ -73,5 +73,5 @@ end
 struct Result
   X::Int
   Y::Int
-  R::Float64
+  R::Float32
 end

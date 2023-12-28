@@ -22,8 +22,8 @@
 import Random: rand
 
 include("types.jl")
-include("utils.jl")
-include("video.jl")
+include("../shared/utils.jl")
+include("../shared/video.jl")
 
 # *----------------------------------------------------------------------------* Constants
 
@@ -44,10 +44,10 @@ const (Nx::Int, Ny::Int) = size(W)
 spawn(A::Agent) = (A.X, A.Y) = (1, 1)
 
 "Calculate reward for a given tile."
-reward(C::Tile)::Float64 = float(C)
+reward(C::Tile)::Float32 = float(C)
 
 "Calculate reward for a given location."
-reward(X::Int, Y::Int)::Float64 = float(W[X, Y])
+reward(X::Int, Y::Int)::Float32 = float(W[X, Y])
 
 # *----------------------------------------------------------------------------* Policies
 
@@ -61,7 +61,7 @@ choiceGreedy(A::Agent)::Move = Move(argmax(A.Q[A.X, A.Y, :]))
 # choiceWeight(A::Agent)::Move = sample(Moves, Weights(A.Q[A.X, A.Y, :])) # via StatsBase
 
 """Choice with exploration rate `ϵ`."""
-choice(A::Agent, ϵ::Float64)::Move = (
+choice(A::Agent, ϵ::Float32)::Move = (
   ϵ > rand() || iszero(A.Q[A.X, A.Y, :])
   ? choiceRandom()
   : choiceGreedy(A)
@@ -70,7 +70,7 @@ choice(A::Agent, ϵ::Float64)::Move = (
 # *----------------------------------------------------------------------------* Interaction
 
 "Make a move and get the reward."
-make(A::Agent, M::Move)::Float64 = begin
+make(A::Agent, M::Move)::Float32 = begin
   if M == Up && A.Y != Ny
     A.Y += 1
   elseif M == Down && A.Y != 1
@@ -87,11 +87,11 @@ make(A::Agent, M::Move)::Float64 = begin
 end
 
 "Update Q-Table with `α` learning rate and `γ` discount factor."
-learn(A::Agent, M::Move, X₀::Int, Y₀::Int, R::Float64; α::Float64=0.7, γ::Float64=0.95) =
+learn(A::Agent, M::Move, X₀::Int, Y₀::Int, R::Float32; α::Float32=0.7f0, γ::Float32=0.95f0) =
   A.Q[X₀, Y₀, M] += α * (R + γ * maximum(A.Q[A.X, A.Y, :]) - A.Q[X₀, Y₀, M])
 
 "Perform a step of action-choice, action-making, and learning."
-function step(A::Agent, ϵ::Float64=0.0)::Tuple{Bool,Int,Int}
+function step(A::Agent, ϵ::Float32=0.0f0)::Tuple{Bool,Int,Int}
   X₀, Y₀ = A.X, A.Y
 
   M = choice(A, ϵ)
